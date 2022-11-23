@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: localhost
+  - host: compasslabwordpress.com
     http:
       paths:
       - path: /
