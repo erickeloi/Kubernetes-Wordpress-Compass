@@ -29,7 +29,7 @@
 *******
 # 0. Estrutura do Projeto
 
-![labwordpress-draw-png](https://user-images.githubusercontent.com/65841249/202715219-cde28bbd-3591-4b99-9cb1-11310d7ada41.png)
+![Estrutura Labwordpress - Erick e Helio](https://user-images.githubusercontent.com/65841249/203549261-08997836-e83f-4042-bcaa-2e9ce6eb3c03.png)
 
 # 1. Instalação Kubernetes:
 
