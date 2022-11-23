@@ -19,10 +19,8 @@
         2. WORDPRESS-PV-claim
     6. ConfigMaps
         1. MYSQL-configmap
-        2. WORDPRESS-configmap
     7. Secrets
         1. MYSQL-secret
-        2. WORDPRESS-secret
     8. Deployment
         1. MYSQL-deployment
         2. WORDPRESS-deployment
@@ -467,7 +465,7 @@ Observe que nos campos abaixo de ```data``` teremos as chaves e os valores para 
 
 ```mysql-service: mysql-service``` o serviço utilizado do banco de dados
 
-apos a criação de o apply no arquivo ```kubectl apply -f configmap.yaml```
+Após a criação, dê o apply no arquivo ```kubectl apply -f configmap.yaml```
 
 ---
 ### 7. Secrets
