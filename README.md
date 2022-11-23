@@ -301,15 +301,6 @@ Podemos dar deploy no `Ingress-Controller (NGINX)` dentro do cluster com o coman
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/cloud/deploy.yaml
 ```
 
-ou, acessando a pasta 'Ingress-NGINX' e executando o arquivo de configurações `ingress-controller.yaml`
-
-```
-cd ./Ingress-NGINX
-```
-```
-kubectl apply -f ingress-controller.yaml
-```
-
 Pode-se confirmar a criação do Ingress Controler conferindo o novo namespace `ingress-nginx` criado, com o comando:
 
 Input:
