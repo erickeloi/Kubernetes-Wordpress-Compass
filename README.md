@@ -1,12 +1,10 @@
 *******
 # Sumário
 0. Estrutura do Projeto
-2. Instalação Kubernetes
+1. Instalação Kubernetes
     1. Instalação no Windows, por extenso (com Docker Desktop)
-    2. Instalação no Ubuntu Linux
-3. Configurar o ambiente
-    1. Garantir que a máquina tem recursos suficientes
-    2. Criar um namespace
+2. Configurar o ambiente
+    1. Criar um namespace
 4. Configurar a aplicação
     1. Services
         1. ClusterIP (MYSQL)
@@ -28,13 +26,9 @@
     8. Deployment
         1. MYSQL-deployment
         2. WORDPRESS-deployment
-5. Monitoramento da aplicação wordpress
-    1. Prometheus Deploy
-    2. Coleta de métricas do wordpress
-    3. Acesso ao dashboard e monitoramento
 6. Bibliografia
-*******
 
+*******
 # 0. Estrutura do Projeto
 
 ![labwordpress-draw-png](https://user-images.githubusercontent.com/65841249/202715219-cde28bbd-3591-4b99-9cb1-11310d7ada41.png)
@@ -43,14 +37,11 @@
 
 ## 1. Instalação no Windows, por extenso (com Docker Desktop)
 
-
-
 Para a subirmos a aplicação do Wordpress em Conjunto com o MySQL via K8's, usaremos as ferramentas a seguir para nos auxiliar a criar um Cluster Kubernetes na máquina local (Windows):
 
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ## 0. Requisitos Mínimos para a instalação do Docker e rodar aplicação Kubernetes na máquina local:
-
 
 Recomendamos, para a instalação do Docker Desktop e para testar a aplicação na máquina local,
 no Mínimo:
@@ -287,9 +278,7 @@ metadata:
 spec:
   type: ClusterIP  
   ports:
-    - protocol: TCP
       port: 80
-      targetPort: 80
   selector:
     app: wordpress
     tier: frontend
@@ -362,8 +351,6 @@ kind: Ingress
 metadata:
   namespace: labwordpress
   name: ingress-template
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:
@@ -377,22 +364,111 @@ spec:
             name: wordpress
             port:
               number: 80
+
 ```
 
 ---
-### 4. Persistent Volumes
 
-#### 1. MYSQL Persistent Volume
-#### 2. WORDPRESS Persistent Volume
----
 ### 5. Persistent Volume Claim
+
+O Persistent Volume Claim(PVC) é Utilizado para requisitar uma Persistent Volume que atenda seus requisitos, o PV é uma parte do armazenamento dentro do cluster.
+
+Ele pode ser tanto criada manualmente ou dinamicamente, nesse caso utilizando o Docker Desktop.
+
+Temos também uma StorageClass que é responsavel pela criação do nosso PV de maneira dinamica. 
+
+Sendo assim, Teremos em nossa estrutura de arquivos somente os YAML relacionados ao PVC.
+
 #### 1. MYSQL-PV-claim
+
+Template:
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  labels:
+    app: wordpress
+  namespace: labwordpress
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+```
+
 #### 2. WORDPRESS-PV-claim
+
+Template:
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wp-pv-claim
+  labels:
+    app: wordpress
+  namespace: labwordpress
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+```
+A estrutura dos nossos PersistentVolumeClaim se dão da seguinte maneira: 
+
+`kind: PersistentVolumeClaim` Corresponde ao tipo do objeto yaml. 
+
+`accessModes:ReadWriteOnce` Está relacionado ao fato de que o volume pode ser montado como leitura-escrita por um nó único. 
+
+`storage: 3Gi` Requisitamos que o volume atenda o tamanho de 3 GigaBytes. 
+
+>OBS: A Diferança entre o MYSQL-PV-claim e o WORDPRESS-PV-claim, nesse caso ficaria no campo `name` que nomeia o objeto. 
+
+Esses objetos também precisam ser executados para funcionarem no cluster !!!
+
+Sobre o Deploy desses Objetos:
+Encaminhe-se para o diretório do serviço em questão (wordpress-app e mysql-banco) e execute os pvcs com:
+
+```
+kubectl apply -f mysql-pvc.yaml
+```
+
+```
+kubectl apply -f wordpress-pvc.yaml
+```
+
 ---
 ### 6. ConfigMaps
 
-#### 1. MYSQL-configmap
-#### 2. WORDPRESS-configmap
+Um ConfigMap é um objeto usado para armazenar dados não-confidenciais em pares chave-valor.
+
+Utilizaremos o seguinte arquivo  ```ConfigMap ```:
+
+Template:
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-configmap
+  namespace: labwordpress
+data:
+  mysql-database: wordpressdb
+  mysql-user: wordpress
+  mysql-service: mysql-service
+```
+
+Observe que nos campos abaixo de ```data``` teremos as chaves e os valores para armazenar respectivamente:
+
+```mysql-database: wordpressdb``` o nome do banco de dados
+
+```mysql-user: wordpress``` o usuario do banco de dados
+
+```mysql-service: mysql-service``` o serviço utilizado do banco de dados
+
+apos a criação de o apply no arquivo ```kubectl apply -f configmap.yaml```
+
 ---
 ### 7. Secrets
 #### 1. MYSQL-secret
@@ -418,7 +494,7 @@ Exemplo (Senha Ilustrativa):
 I$desY9&11h9HiS76*ec33lb*eTUDe7v&i7!QrakDDwl$6ntvc
 ```
 
-OBS: A Senha em questão é uma Senha aleatória de 50 caracteres, com simbolos, números, caracteres especiais, letras maisuculas e minusculas. Site usado para gerar a senha em questão: https://www.lastpass.com/pt/features/password-generator
+> OBS: A Senha em questão é uma Senha aleatória de 50 caracteres, com simbolos, números, caracteres especiais, letras maisuculas e minusculas. Site usado para gerar a senha em questão: https://www.lastpass.com/pt/features/password-generator
 
 > **Note**: lembre-se de criar uma senha com fortes padrões de segurança !!
 (Exemplo: Muitos caracteres, letra maiúscula e minuscula, números, caracteres especiais)
@@ -427,17 +503,26 @@ E então, encripte sua senha para base64, você pode fazer isso no site:
 https://www.base64encode.org
 
 ou, no Ubuntu (e outras Distro Linux) com o comando:
+
+```
+echo '<sua-senha-forte> | base64
+```
+
+Exemplo (Senha Ilustrativa):
 ```
 echo  'I$desY9&11h9HiS76*ec33lb*eTUDe7v&i7!QrakDDwl$6ntvc' | base64
 ```
 
 A saída desse comando é sua senha encriptada em base64:
+
+Output:
 ```
 SSRkZXNZOSYxMWg5SGlTNzYqZWMzM2xiKmVUVURlN3YmaTchUXJha0REd2wkNm50dmM=
 ```
 
-Com isso, abra o arquivo `mysql-secret.yaml` e adicione sua senha encriptada como valor da variável `mysql-root-password`, 
-Exemplo:
+Com isso, abra o arquivo `mysql-secret.yaml` e adicione sua senha encriptada como valor da variável `mysql-root-password`.
+
+Exemplo (Senha Ilustrativa):
 
 ```yaml
 apiVersion: v1  
@@ -463,29 +548,60 @@ Converta essa senha para base64
 echo  '<Sua-Senha-Forte>' | base64
 ```
 Coloque essa senha encriptada em base64 no arquivo de secret, como valor da variável `mysql-root-password` ! 
-#### 2. WORDPRESS-secret
 
+---
+
+> OBS:Caso o arquivo de configuração yaml não exista , Crie-o.
+
+Sobre o Deploy desse Objeto:
+
+Encaminhe-se para o diretório onde esse arquivo de configuração yaml está localizado (mysql-banco) e execute o arquivo de configuração `mysql-secret.yaml` com o comando:
+
+```
+kubectl apply -f mysql-secret.yaml
+```
+
+E pronto, agora ele está em execução no Cluster.
 ---
 ### 8. Deployment
 
 #### 1. MYSQL-deployment
-Para darmos deploy na aplicação dentro do cluster, usaremos o objeto 'Deployment' do Kubernetes,
+Para darmos deploy na aplicação dentro do cluster, usaremos o objeto 'Deployment' do Kubernetes, Nesse caso, daremos deploy na aplicação de banco de dados (MySQL)
 
-Nesse caso, daremos deploy na aplicação de banco de dados (MySQL)
+Para isso é utilizado o arquivo com os seguintes campos demonstrados abaixo, nele possuimos as ```matchLabels```, que seram usadas para ligar o objeto com o seu respectivo serviço. 
+
+Temos também o campo ```Strategy``` com o ```tipo(type)``` definido como ```recreate```, caso aconteça algo com o Pod teremos a recriação do mesmo até que seja concertado o erro. 
+
+Logo abaixo de ```containers``` temos o campo ```image``` onde denifimos a imagem que utilizaremos sendo nesse caso ```mysql: 8.0.31```, temos também as variaveis de ambientes que seram necessarias para definir o nosso container. 
+
+Sendo elas e suas respectivas definições:
+
+```MYSQL_ROOT_PASSWORD``` = Senha do usuario root
+
+```MYSQL_DATABASE``` = Nome do banco de dados
+
+```MYSQL_USER``` = O usuario 
+
+```MYSQL_PASSWORD``` = Senha
+
+Já nos campos ```VolumeMounts``` e ```Volumes``` definimos o caminho do volume dentro do container e em ```Volumes``` colocamos o PVC para solicitar o PV respectivos para o mysql.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: labwordpress
-  name: wordpress-mysql
+  name: mysql-deployment
   labels:
     app: wordpress
+  namespace: labwordpress
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: wordpress
       tier: mysql
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -493,14 +609,29 @@ spec:
         tier: mysql
     spec:
       containers:
-      - image: mysql:5.6
+      - image: mysql:8.0.31
         name: mysql
         env:
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-configmap
+              key: mysql-database
+        - name: MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-configmap
+              key: mysql-user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: mysql-password
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
-              key: mysql-root-password
+              key: mysql-root-password              
         ports:
         - containerPort: 3308
           name: mysql
@@ -516,40 +647,90 @@ spec:
 
 #### 2. WORDPRESS-deployment
 
+Com o deployment do MYSQL pronto, teremos uma base parecida porém com algumas diferenças para nosso deployment da aplicação Wordpress, sendo elas nas ```matchLabels``` que teram valores correspondentes para se conectarem com o service da aplicação wordpress,`image` que sera utilizada ```wordpress:6.1.1```, as variaveis de ambiente que serão as demonstradas abaixo com as suas respectivas definições: 
+
+```WORDPRESS_DB_HOST = nome do service do mysql```
+
+```WORDPRESS_DB_USER = nome do usuario do banco de dados mysql```
+
+```WORDPRESS_DB_PASSWORD = a senha do usuario do banco de dados mysql```
+
+```WORDPRESS_DB_NAME = o nome do banco de dados```
+ 
+Já nos campos ```VolumeMounts``` e ```Volumes``` definimos o caminho do volume dentro do container e em ```Volumes``` colocamos o PVC para solicitar o PV, porém desta vez respectivos para o wordpress. 
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wp-deployment
+  name: wordpress-deployment
+  labels:
+    app: wordpress
+  namespace: labwordpress  
 spec:
-  template:
-    metadata:
-      name: wp-pod
-      labels:
-        app: wp-pod
-    spec:
-      containers:
-        - name: wp-container
-          image: wordpress:latest
-          envFrom:
-          - secretRef:
-              name: wp-secret
-          ports:
-            - containerPort: 80
-      volumeMounts:
-        - name: wordpress-persistent-storage
-          mountPath: /var/www/html
-      volumes:
-      - name: wordpress-persistent-storage
-        persistentVolumeClaim:
-          claimName: wp-pv-claim
-
   replicas: 2
   selector:
     matchLabels:
-      app: wp-pod
+      app: wordpress
+      tier: frontend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress
+        tier: frontend
+    spec:
+      containers:
+      - image: wordpress:6.1.1
+        name: wordpress
+        env:
+        - name: WORDPRESS_DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-configmap
+              key: mysql-service
+        - name: WORDPRESS_DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-configmap
+              key: mysql-database      
+        - name: WORDPRESS_DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-configmap
+              key: mysql-user        
+        - name: WORDPRESS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: mysql-root-password
+        ports:
+        - containerPort: 80
+          name: wordpress
+        volumeMounts:
+        - name: wordpress-persistent-storage-lab
+          mountPath: /var/www/html
+      volumes:
+      - name: wordpress-persistent-storage-lab
+        persistentVolumeClaim:
+          claimName: wp-pv-claim
+```
+---
+
+Sobre o Deploy desse Objeto:
+
+Encaminhe-se para o diretório onde os arquivos de configuração yaml estão localizados (mysql-banco e wordpress-app) e execute os arquivos de configuração `mysql-deployment.yaml` e `wordpress-deployment.yaml` com o comando:
+
+```
+kubectl apply -f mysql-deployment.yaml
 ```
 
+```
+kubectl apply -f wordpress-deployment.yaml
+```
+
+E pronto, agora ele está em execução no Cluster.
 ---
 
 ## 5. Bibliografia 

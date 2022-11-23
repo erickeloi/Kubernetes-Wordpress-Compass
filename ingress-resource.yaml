@@ -3,18 +3,16 @@ kind: Ingress
 metadata:
   namespace: labwordpress
   name: ingress-template
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:
-  - host: compasslabwordpress.com
+  - host: localhost
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: wordpress
+            name: wordpress-service
             port:
               number: 80

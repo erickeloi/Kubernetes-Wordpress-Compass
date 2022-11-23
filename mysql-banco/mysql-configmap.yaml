@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-configmap
+  namespace: labwordpress
+data:
+  mysql-database: wordpressdb
+  mysql-user: wordpress
+  mysql-service: mysql-service
