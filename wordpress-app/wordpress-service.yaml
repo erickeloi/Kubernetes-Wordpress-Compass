@@ -11,5 +11,4 @@ spec:
   selector:
     app: wordpress
     tier: frontend
-  clusterIP: None
   type: ClusterIP
