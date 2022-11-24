@@ -474,6 +474,7 @@ metadata:
 type: Opaque  
 data:  
   mysql-root-password: <senha-root-mysql-encriptada-em-base64>
+  mysql-password: <senha-mysql-encriptada-em-base64>
 ```
 
 Primeiramente, Crie uma senha para o banco de dados MySQL, 
